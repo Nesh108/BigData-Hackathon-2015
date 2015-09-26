@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Companies Locator</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="data.js"></script>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    #map {
+        height: 100%;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+    function initMap() {
+
+
+        function getParameterByName(name) {
+            name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+            var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                results = regex.exec(location.search);
+            return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+        }
+
+        var filter = getParameterByName("filter");
+        console.log(filter);
+        var myLatLng = {
+            lat: 60.17332440000001,
+            lng: 24.9410248
+        };
+        var geocoder = new google.maps.Geocoder;
+
+        var circle;
+        var last_clicked;
+        var companies_marker = [];
+
+        var map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 4,
+            center: myLatLng
+        });
+
+        function pinSymbol(color) {
+            return {
+                path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -2,-30 a 2,2 0 1,1 4,0 2,2 0 1,1 -4,0',
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: '#000',
+                strokeWeight: 2,
+                scale: 1,
+            };
+        }
+
+        // Ugly hackathon solution
+        map.addListener('click', function(event) {
+
+            var rad;
+
+            switch (map.getZoom()) {
+                case 4:
+                    rad = 500000;
+                    break;
+                case 5:
+                    rad = 250000;
+                    break;
+                case 6:
+                    rad = 100000;
+                    break;
+                case 7:
+                    rad = 60000;
+                    break;
+                case 8:
+                    rad = 30000;
+                    break;
+                case 9:
+                    rad = 10000;
+                    break;
+                case 10:
+                    rad = 8000;
+                    break;
+                case 11:
+                    rad = 6000;
+                    break;
+                case 12:
+                    rad = 5000;
+                    break;
+                case 13:
+                    rad = 2000;
+                    break;
+                case 14:
+                    rad = 1000;
+                    break;
+                case 15:
+                    rad = 500;
+                    break;
+                case 16:
+                    rad = 200;
+                    break;
+                case 17:
+                    rad = 80;
+                    break;
+
+                default:
+                    rad = 600000;
+            }
+
+
+            if (circle != undefined)
+                circle.setMap(null);
+
+            circle = new google.maps.Circle({
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                clickable: true,
+                fillColor: '#FF0000',
+                fillOpacity: 0.15,
+                map: map,
+                center: event.latLng,
+                radius: rad
+            });
+
+            circle.addListener('click', function() {
+                circle.setMap(null);
+                while (companies_marker.length > 0) {
+                    companies_marker.pop().setMap(null);;
+                }
+            });
+
+            while (companies_marker.length > 0) {
+                companies_marker.pop().setMap(null);;
+            }
+
+            results.forEach(function(entry) {
+
+                if (google.maps.geometry.spherical.computeDistanceBetween(circle.getCenter(), new google.maps.LatLng(entry.lat, entry.lng)) <= circle.getRadius()) {
+
+                    if (filter == "" || entry.type_code.substring(0, 3) == filter) {
+
+                        console.log(entry.type_code)
+                        var contentString = '<div id="content"><b>' +
+                            entry.name + "</b><br/><u>Type</u>: " +
+                            company_type[entry.type_code.substring(0, 3)] +
+                            "<br/><u>Registered on</u>: " +
+                            entry.registrationDate + "<br/><u>Website</u>: " +
+                            entry.website + "<br/><u>Phone</u>: " +
+                            entry.phone + "<br/><u>Fax</u>: " +
+                            entry.fax + "<br/>" +
+                            "<br/><u>Address</u>:<br/>" +
+                            entry.street + "<br/>" +
+                            entry.postCode + "<br/>" +
+                            entry.city + "<br/>" + '</div>';
+
+                        var color;
+
+                        if (entry.type_code.indexOf("0") === 0)
+                            color = '#008000';
+                        else if (entry.type_code.indexOf("1") === 0)
+                            color = '#008080';
+                        else if (entry.type_code.indexOf("2") === 0)
+                            color = '#800080';
+                        else if (entry.type_code.indexOf("3") === 0)
+                            color = '#FFF000';
+                        else if (entry.type_code.indexOf("4") === 0)
+                            color = '#FF0000';
+                        else if (entry.type_code.indexOf("5") === 0)
+                            color = '#FFFFF0';
+                        else if (entry.type_code.indexOf("6") === 0)
+                            color = '#808000';
+                        else if (entry.type_code.indexOf("7") === 0)
+                            color = '#FFFF00';
+                        else if (entry.type_code.indexOf("8") === 0)
+                            color = '#FF00FF';
+                        else if (entry.type_code.indexOf("9") === 0)
+                            color = '#808080';
+                        else
+                            color = "#008080";
+
+                        var infowindow = new google.maps.InfoWindow({
+                            content: contentString
+                        });
+
+                        var marker = new google.maps.Marker({
+                            position: {
+                                lat: entry.lat,
+                                lng: entry.lng
+                            },
+                            map: map,
+                            icon: pinSymbol(color)
+
+                        });
+
+                        marker.addListener('click', function() {
+
+                            infowindow.open(map, marker);
+
+                            if (last_clicked != undefined)
+                                last_clicked.close();
+
+                            last_clicked = infowindow;
+                        });
+
+                        companies_marker.push(marker);
+                    }
+                }
+            });
+
+        });
+
+    }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBH347aX6zr7lY6DNdu0GeMVM9PkCQWpFM&callback=initMap&libraries=geometry&sensor=false" async defer></script>
+</body>
+
+</html>
